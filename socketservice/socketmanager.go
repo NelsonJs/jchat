@@ -1,9 +1,11 @@
 package socketservice
 
 import (
+	"fmt"
 	"jchat/logs"
 	"jchat/models"
 	"sync"
+	"time"
 )
 
 type ClientManager struct {
@@ -68,6 +70,23 @@ func isLogin(userId string) bool {
 func getClient(userId string) (*Client, bool) {
 	c, ok := clientManager.Clients[userId]
 	return c, ok
+}
+
+var pingWait = 5 * time.Second
+
+// 检测无响应的连接
+//每5秒发送一个ping消息，收到后回复一个pong消息
+func CheckDeadConn() {
+	if clientManager.Clients != nil {
+		for _, client := range clientManager.Clients {
+			client.Socket.SetReadDeadline(time.Now().Add(pingWait))
+			client.Socket.SetPingHandler(func(appData string) error {
+				fmt.Println(appData)
+				client.Socket.SetReadDeadline(time.Now().Add(pingWait))
+				return nil
+			})
+		}
+	}
 }
 
 func StartListen() {
