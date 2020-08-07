@@ -1,6 +1,7 @@
 package socketservice
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
@@ -10,23 +11,24 @@ import (
 
 const (
 	Android = 1
-	IOS = 2
-	WEB = 3
+	IOS     = 2
+	WEB     = 3
 )
 
 type Client struct {
-	UserId string
+	UserId    string
 	LoginTime int64
-	Socket *websocket.Conn
-	Addr string //客户端地址
-	AppId int8 //登陆平台的id android/ios/web
-	msg chan []byte
+	Socket    *websocket.Conn
+	Addr      string //客户端地址
+	AppId     int8   //登陆平台的id android/ios/web
+	msg       chan []byte
 }
 
-func NewClient(loginTime int64,conn *websocket.Conn) *Client {
+func NewClient(loginTime int64, conn *websocket.Conn) *Client {
 	return &Client{
 		LoginTime: loginTime,
-		Socket: conn,
+		Socket:    conn,
+		msg:       make(chan []byte, 10),
 	}
 }
 
@@ -37,13 +39,20 @@ func (client *Client) Read() {
 		}
 	}()
 	for {
-		msgType,msg,err := client.Socket.ReadMessage()
+		msgType, msg, err := client.Socket.ReadMessage()
+		m := Msg{}
+		err = json.Unmarshal(msg, &m)
 		if err != nil {
-			logs.Logger().Error(err.Error(),zap.String("读取消息","遇到错误"),
-				zap.Duration("time",time.Second))
+			fmt.Println(err.Error())
 			return
 		}
-		client.Process(msgType,msg)
+		fmt.Println(m)
+		if err != nil {
+			logs.Logger().Error(err.Error(), zap.String("read msg", "meet error....."),
+				zap.Duration("time", time.Second))
+			return
+		}
+		client.Process(msgType, msg)
 	}
 }
 
@@ -55,11 +64,12 @@ func (client *Client) Write() {
 	}()
 	for {
 		select {
-		case b,ok := <-client.msg:
+		case b, ok := <-client.msg:
+			fmt.Println("write..", ok, string(b))
 			if !ok {
 				return
 			}
-			client.Socket.WriteMessage(websocket.TextMessage,b)
+			client.Socket.WriteMessage(websocket.TextMessage, b)
 		}
 	}
 

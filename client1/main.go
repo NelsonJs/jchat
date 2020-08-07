@@ -41,8 +41,8 @@ func main() {
 				fmt.Println(n, "--", err.Error())
 			} else {
 				msg := Msg{
-					SelfId:  "2",
-					PeerId:  "1",
+					SelfId:  "1",
+					PeerId:  "2",
 					Cmd:     "sendMsg",
 					MsgType: "text",
 					Text:    input,
@@ -66,9 +66,9 @@ func main() {
 		select {
 		//case <-ticker.C:
 		//	msg := Msg{
-		//		SelfId:"2",
-		//		PeerId:"1",
-		//		Cmd:     "sendMsg",
+		//		SelfId:"1",
+		//		PeerId:"2",
+		//		Cmd:     "login",
 		//		MsgType: "text",
 		//		Text:    "this is send text",
 		//	}
