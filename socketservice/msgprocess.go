@@ -61,6 +61,21 @@ func (client *Client) Process(socketTransferType int, msg []byte) {
 		}
 	}()
 
+	if socketTransferType == websocket.TextMessage {
+		fmt.Println("receive the text message")
+	} else if socketTransferType == websocket.BinaryMessage {
+		fmt.Println("receive the binary message")
+		return
+	} else if socketTransferType == websocket.PingMessage {
+		fmt.Println("receive the ping message")
+		return
+	} else if socketTransferType == websocket.PongMessage {
+		fmt.Println("receive the pong message")
+		return
+	} else if socketTransferType == websocket.CloseMessage {
+		fmt.Println("receive the close message")
+		return
+	}
 	msgModel := Msg{}
 	err := json.Unmarshal(msg, &msgModel)
 	if err != nil {
@@ -94,18 +109,7 @@ func (client *Client) Process(socketTransferType int, msg []byte) {
 	if handler, ok := getCmdFunc(msgModel.Cmd); ok {
 		handler(client, &msgModel)
 	}
-	fmt.Println("msgType--->", socketTransferType)
-	if socketTransferType == websocket.TextMessage {
 
-	} else if socketTransferType == websocket.BinaryMessage {
-
-	} else if socketTransferType == websocket.PingMessage {
-
-	} else if socketTransferType == websocket.PongMessage {
-
-	} else if socketTransferType == websocket.CloseMessage {
-
-	}
 }
 
 func sendMsg(client *Client, msg *Msg) {

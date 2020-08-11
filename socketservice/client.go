@@ -16,20 +16,30 @@ const (
 )
 
 type Client struct {
-	UserId    string
-	LoginTime int64
-	Socket    *websocket.Conn
-	Addr      string //客户端地址
-	AppId     int8   //登陆平台的id android/ios/web
-	msg       chan []byte
+	UserId        string
+	LoginTime     int64
+	Socket        *websocket.Conn
+	Addr          string //客户端地址
+	AppId         int8   //登陆平台的id android/ios/web
+	msg           chan []byte
+	HeartBeatTime int64
 }
 
-func NewClient(loginTime int64, conn *websocket.Conn) *Client {
+func NewClient(loginTime int64, conn *websocket.Conn, hTime int64) *Client {
 	return &Client{
-		LoginTime: loginTime,
-		Socket:    conn,
-		msg:       make(chan []byte, 10),
+		LoginTime:     loginTime,
+		Socket:        conn,
+		msg:           make(chan []byte, 10),
+		HeartBeatTime: hTime,
 	}
+}
+
+func (client *Client) clientExpired() bool {
+	fmt.Println(time.Now().Unix(), "-----", client.HeartBeatTime)
+	if time.Now().Unix() > (10 + client.HeartBeatTime) {
+		return true
+	}
+	return false
 }
 
 func (client *Client) Read() {

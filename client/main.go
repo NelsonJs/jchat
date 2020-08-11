@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"time"
 )
 
 var input string
@@ -23,6 +24,12 @@ func main() {
 		return
 	}
 	defer c.Close()
+	go func() {
+		c.SetPongHandler(func(appData string) error {
+			fmt.Println("receive the pong message..")
+			return nil
+		})
+	}()
 	go func() {
 		for {
 			_, msg, err := c.ReadMessage()
@@ -43,7 +50,7 @@ func main() {
 				msg := Msg{
 					SelfId:  "2",
 					PeerId:  "1",
-					Cmd:     "sendMsg",
+					Cmd:     "login",
 					MsgType: "text",
 					Text:    input,
 				}
@@ -60,30 +67,35 @@ func main() {
 			}
 		}
 	}()
-	//ticker := time.NewTicker(2 * time.Second)
-	//defer ticker.Stop()
+	ticker := time.NewTicker(4 * time.Second)
+	defer ticker.Stop()
 	for {
 		select {
-		//case <-ticker.C:
-		//	msg := Msg{
-		//		SelfId:"2",
-		//		PeerId:"1",
-		//		Cmd:     "sendMsg",
-		//		MsgType: "text",
-		//		Text:    "this is send text",
-		//	}
-		//	b, err := json.Marshal(&msg)
-		//	if err != nil {
-		//		fmt.Println("marshal fail...", err.Error())
-		//		return
-		//	}
-		//	fmt.Println(msg)
-		//	//s := "{\"Cmd\":\"sendMsg\",\"msgType\":\"text\",\"text\":\"this is send text\"}"
-		//	err = c.WriteMessage(websocket.TextMessage, b)
-		//	if err != nil {
-		//		fmt.Println("Client写入数据失败：", err.Error())
-		//		return
-		//	}
+		case <-ticker.C:
+			err = c.WriteMessage(websocket.PingMessage, []byte("this is ping msg..."))
+			//if err != nil {
+			//	fmt.Println("ping msg err ..", err.Error())
+			//	return
+			//}
+			//msg := Msg{
+			//	SelfId:"2",
+			//	PeerId:"1",
+			//	Cmd:     "sendMsg",
+			//	MsgType: "text",
+			//	Text:    "this is send text",
+			//}
+			//b, err := json.Marshal(&msg)
+			//if err != nil {
+			//	fmt.Println("marshal fail...", err.Error())
+			//	return
+			//}
+			//fmt.Println(msg)
+			////s := "{\"Cmd\":\"sendMsg\",\"msgType\":\"text\",\"text\":\"this is send text\"}"
+			//err = c.WriteMessage(websocket.TextMessage, b)
+			//if err != nil {
+			//	fmt.Println("Client写入数据失败：", err.Error())
+			//	return
+			//}
 		case <-interrupt:
 			fmt.Println("客户端interrupt")
 			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))

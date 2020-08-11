@@ -35,7 +35,8 @@ func serveWs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	logs.Logger().Info("connected WebSocket", zap.Duration("time", time.Second))
-	client := socketservice.NewClient(time.Now().Unix(), conn)
+	var htime = time.Now().Unix()
+	client := socketservice.NewClient(time.Now().Unix(), conn, htime)
 	go client.Read()
 	go client.Write()
 }

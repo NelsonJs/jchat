@@ -2,6 +2,7 @@ package socketservice
 
 import (
 	"fmt"
+	"github.com/gorilla/websocket"
 	"jchat/logs"
 	"jchat/models"
 	"sync"
@@ -42,6 +43,28 @@ func (manager *ClientManager) register(client *Client) {
 			return
 		}
 		client.msg <- b
+		// 检测无响应的连接
+		//每5秒发送一个ping消息，收到后回复一个pong消息
+		if client.UserId == "2" {
+			client.Socket.SetPingHandler(func(appData string) error {
+				fmt.Println("ping handler--->", appData)
+				client.Socket.WriteMessage(websocket.PongMessage, []byte("pong message.."))
+				client.HeartBeatTime = time.Now().Unix()
+				return nil
+			})
+		}
+
+	}
+}
+
+func checkNoResponseConn() {
+	fmt.Println("checking..")
+	for _, v := range clientManager.Clients {
+		fmt.Println("checking..", v.UserId)
+		if v.UserId == "2" && v.clientExpired() {
+			fmt.Println("del--->", v.UserId)
+			delete(clientManager.Clients, v.UserId)
+		}
 	}
 }
 
@@ -72,26 +95,16 @@ func getClient(userId string) (*Client, bool) {
 	return c, ok
 }
 
-var pingWait = 5 * time.Second
-
-// 检测无响应的连接
-//每5秒发送一个ping消息，收到后回复一个pong消息
-func CheckDeadConn() {
-	if clientManager.Clients != nil {
-		for _, client := range clientManager.Clients {
-			client.Socket.SetReadDeadline(time.Now().Add(pingWait))
-			client.Socket.SetPingHandler(func(appData string) error {
-				fmt.Println(appData)
-				client.Socket.SetReadDeadline(time.Now().Add(pingWait))
-				return nil
-			})
-		}
-	}
-}
+var pingWait = 8 * time.Second
+var checkWait = 10 * time.Second
 
 func StartListen() {
+	var t = time.NewTicker(checkWait)
+	defer t.Stop()
 	for {
 		select {
+		case <-t.C:
+			checkNoResponseConn()
 		case c, ok := <-clientManager.Login:
 			if ok {
 				clientManager.register(c)
